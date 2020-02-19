@@ -244,6 +244,15 @@ const reco::JetFlavourInfo& Jet::jetFlavourInfo() const { return jetFlavourInfo_
 
 /// ============= Jet Energy Correction methods ============
 
+/// Scale energy and correspondingly add jec factor
+void Jet::scaleEnergy(double fScale, const std::string& level) {
+  if (jecSetsAvailable()) {
+    std::vector<float> factors = {float(jec_[0].correction(0, JetCorrFactors::NONE) / fScale)};
+    jec_[0].insertFactor(0, std::make_pair(level, factors));
+  }
+  setP4(p4() * fScale);
+}
+
 // initialize the jet to a given JEC level during creation starting from Uncorrected
 void Jet::initializeJEC(unsigned int level, const JetCorrFactors::Flavor& flavor, unsigned int set) {
   currentJECSet(set);
@@ -390,6 +399,10 @@ const reco::SecondaryVertexTagInfo* Jet::tagInfoSecondaryVertex(const std::strin
 
 const reco::BoostedDoubleSVTagInfo* Jet::tagInfoBoostedDoubleSV(const std::string& label) const {
   return tagInfoByTypeOrLabel<reco::BoostedDoubleSVTagInfo>(label);
+}
+
+const reco::PixelClusterTagInfo* Jet::tagInfoPixelCluster(const std::string& label) const {
+  return tagInfoByTypeOrLabel<reco::PixelClusterTagInfo>(label);
 }
 
 void Jet::addTagInfo(const std::string& label, const TagInfoFwdPtrCollection::value_type& info) {

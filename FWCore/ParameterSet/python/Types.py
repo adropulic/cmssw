@@ -75,7 +75,10 @@ class _ProxyParameter(_ParameterTypeBase):
     def validate_(self,value):
         return isinstance(value,self.__type)
     def convert_(self,value):
-        return self.__type(value)
+        v = self.__type(value)
+        if not _ParameterTypeBase.isTracked(self):
+            v = untracked(v)
+        return v
 
 class _RequiredParameter(_ProxyParameter):
     @staticmethod
@@ -95,6 +98,11 @@ class _OptionalParameter(_ProxyParameter):
         v = self.__dict__.get('_ProxyParameter__value', None)
         if v is not None:
             v.insertInto(parameterSet,myname)
+    def value(self):
+        v = self.__dict__.get('_ProxyParameter__value', None)
+        if v is not None:
+            return v.value()
+        return None
 
 class _ObsoleteParameter(_OptionalParameter):
     @staticmethod
@@ -121,8 +129,8 @@ class _AllowedParameterTypes(object):
                 if chosenType is not None:
                     raise RuntimeError("Ambiguous type conversion for 'allowed' parameter")
                 chosenType = t
-            if chosenType is None:
-                raise RuntimeError("Cannot convert "+str(value)+" to 'allowed' type")
+        if chosenType is None:
+            raise RuntimeError("Cannot convert "+str(value)+" to 'allowed' type")
         return chosenType(value)
 
 
@@ -819,6 +827,9 @@ class PSet(_ParameterTypeBase,_Parameterizable,_ConfigureComponent,_Labelable):
         return config
     def dumpPython(self, options=PrintOptions()):
         return self.pythonTypeName()+"(\n"+_Parameterizable.dumpPython(self, options)+options.indentation()+")"
+    # XXX FIXME handle refToPSet
+    def directDependencies(self):
+        return []
     def clone(self, **params):
         myparams = self.parameters_()
         _modifyParametersFromDict(myparams, params, self._Parameterizable__raiseBadSetAttr)
@@ -1133,6 +1144,9 @@ class VPSet(_ValidatingParameterListBase,_ConfigureComponent,_Labelable):
             pset.insertContentsInto(newparameterset)
             parametersets.append(newparameterset)
         parameterSet.addVPSet(self.isTracked(), myname, parametersets)
+    # XXX FIXME handle refToPSet
+    def directDependencies(self):
+        return []
     def __repr__(self):
         return self.dumpPython()
 
@@ -1344,6 +1358,10 @@ class EDAlias(_ConfigureComponent,_Labelable,_Parameterizable):
             resultList.append(options.indentation()+name+' = '+param.dumpPython(options))
             options.unindent()
         return '\n'.join(resultList)+'\n)'
+
+    # an EDAlias only references other modules by label, so it does not need their definition
+    def directDependencies(self):
+        return []
 
 if __name__ == "__main__":
 
@@ -1611,6 +1629,13 @@ if __name__ == "__main__":
             p1.foo = 3
             self.assertEqual(p1.foo.value(),3)
             self.assertRaises(ValueError,setattr,p1, 'bar', 'bad')
+            self.assert_(p1.foo.isTracked())
+            p1 = PSet(allowAnyLabel_ = required.untracked.int32)
+            self.failIf(p1.hasParameter(['allowAnyLabel_']))
+            p1.foo = 3
+            self.assertEqual(p1.foo.value(),3)
+            self.failIf(p1.foo.isTracked())
+            self.assertRaises(ValueError,setattr,p1, 'bar', 'bad')
         def testOptional(self):
             p1 = PSet(anInt = optional.int32)
             self.assert_(hasattr(p1,"anInt"))
@@ -1644,11 +1669,21 @@ if __name__ == "__main__":
             p1.aValue = 1
             self.assertEqual(p1.dumpPython(),'cms.PSet(\n    aValue = cms.int32(1)\n)')
             self.assertRaises(ValueError,setattr(p1,'aValue',PSet()))
+            p1 = PSet(aValue = required.allowed(int32, string))
+            self.assertEqual(p1.dumpPython(),'cms.PSet(\n    aValue = cms.required.allowed(cms.int32,cms.string)\n)')
+            p1.aValue = "foo"
+            self.assertEqual(p1.dumpPython(),"cms.PSet(\n    aValue = cms.string('foo')\n)")
+
             p1 = PSet(aValue = required.untracked.allowed(int32, string))
             self.assertEqual(p1.dumpPython(),'cms.PSet(\n    aValue = cms.required.untracked.allowed(cms.int32,cms.string)\n)')
             p1.aValue = 1
             self.assertEqual(p1.dumpPython(),'cms.PSet(\n    aValue = cms.untracked.int32(1)\n)')
             self.assertRaises(ValueError,setattr(p1,'aValue',PSet()))
+            p1 = PSet(aValue = required.untracked.allowed(int32, string))
+            self.assertEqual(p1.dumpPython(),'cms.PSet(\n    aValue = cms.required.untracked.allowed(cms.int32,cms.string)\n)')
+            p1.aValue = "foo"
+            self.assertEqual(p1.dumpPython(),"cms.PSet(\n    aValue = cms.untracked.string('foo')\n)")
+
             p2 = PSet(aValue=optional.allowed(int32,PSet))
             self.assertEqual(p2.dumpPython(),'cms.PSet(\n    aValue = cms.optional.allowed(cms.int32,cms.PSet)\n)')
             p2.aValue = 2
@@ -1656,6 +1691,7 @@ if __name__ == "__main__":
             p2 = PSet(aValue=optional.allowed(int32,PSet))
             p2.aValue = PSet(i = int32(3))
             self.assertEqual(p2.aValue.i.value(),3)
+
             p2 = PSet(aValue=optional.untracked.allowed(int32,PSet))
             self.assertEqual(p2.dumpPython(),'cms.PSet(\n    aValue = cms.optional.untracked.allowed(cms.int32,cms.PSet)\n)')
             p2.aValue = 2
@@ -1663,6 +1699,30 @@ if __name__ == "__main__":
             p2 = PSet(aValue=optional.untracked.allowed(int32,PSet))
             p2.aValue = PSet(i = int32(3))
             self.assertEqual(p2.aValue.i.value(),3)
+
+            p3 = PSet(aValue=required.allowed(int32,uint32))
+            p3.aValue = -42
+            self.assertEqual(p3.aValue.value(), -42)
+            p3 = PSet(aValue=required.allowed(int32,uint32))
+            self.assertRaises(RuntimeError, lambda: setattr(p3, "aValue", 42))
+
+            p3 = PSet(aValue=required.untracked.allowed(int32,uint32))
+            p3.aValue = -42
+            self.assertEqual(p3.aValue.value(), -42)
+            p3 = PSet(aValue=required.untracked.allowed(int32,uint32))
+            self.assertRaises(RuntimeError, lambda: setattr(p3, "aValue", 42))
+
+            p3 = PSet(aValue=optional.allowed(int32,uint32))
+            p3.aValue = -42
+            self.assertEqual(p3.aValue.value(), -42)
+            p3 = PSet(aValue=optional.allowed(int32,uint32))
+            self.assertRaises(RuntimeError, lambda: setattr(p3, "aValue", 42))
+
+            p3 = PSet(aValue=optional.untracked.allowed(int32,uint32))
+            p3.aValue = -42
+            self.assertEqual(p3.aValue.value(), -42)
+            p3 = PSet(aValue=optional.untracked.allowed(int32,uint32))
+            self.assertRaises(RuntimeError, lambda: setattr(p3, "aValue", 42))
 
         def testVPSet(self):
             p1 = VPSet(PSet(anInt = int32(1)), PSet(anInt=int32(2)))

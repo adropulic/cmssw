@@ -6,7 +6,6 @@
 #include "DQMOffline/Muon/interface/TriggerMatchMonitor.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "DQMServices/Core/interface/DQMStore.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "TLorentzVector.h"
@@ -22,9 +21,6 @@ TriggerMatchMonitor::TriggerMatchMonitor(const edm::ParameterSet& pSet) {
   LogTrace(metname) << "[TriggerMatchMonitor] Parameters initialization";
 
   parameters = pSet;
-
-  // the services
-  theService = new MuonServiceProxy(parameters.getParameter<ParameterSet>("ServiceParameters"));
 
   beamSpotToken_ = consumes<reco::BeamSpot>(parameters.getUntrackedParameter<edm::InputTag>("offlineBeamSpot")),
   primaryVerticesToken_ =
@@ -47,7 +43,7 @@ TriggerMatchMonitor::TriggerMatchMonitor(const edm::ParameterSet& pSet) {
   triggerPtThresholdPath2_ = parameters.getParameter<double>("triggerPtThresholdPath2");
   theFolder = parameters.getParameter<string>("folder");
 }
-TriggerMatchMonitor::~TriggerMatchMonitor() { delete theService; }
+TriggerMatchMonitor::~TriggerMatchMonitor() {}
 
 void TriggerMatchMonitor::bookHistograms(DQMStore::IBooker& ibooker,
                                          edm::Run const& /*iRun*/,
@@ -140,7 +136,6 @@ void TriggerMatchMonitor::bookHistograms(DQMStore::IBooker& ibooker,
 }
 void TriggerMatchMonitor::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   LogTrace(metname) << "[TriggerMatchMonitor] Analyze the mu in different eta regions";
-  theService->update(iSetup);
 
   edm::Handle<edm::View<reco::Muon>> muons;
   iEvent.getByToken(theMuonCollectionLabel_, muons);

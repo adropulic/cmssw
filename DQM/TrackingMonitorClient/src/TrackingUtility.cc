@@ -1,5 +1,5 @@
 #include "DQM/TrackingMonitorClient/interface/TrackingUtility.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
+#include "DQMServices/Core/interface/DQMStore.h"
 
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
 //
@@ -179,9 +179,12 @@ int TrackingUtility::getMEStatus(MonitorElement* me, int& bad_channels) {
 //
 void TrackingUtility::getMEValue(MonitorElement* me, std::string& val) {
   val = "";
-  if (me && (me->kind() == MonitorElement::DQM_KIND_REAL || me->kind() == MonitorElement::DQM_KIND_INT)) {
-    val = me->valueString();
-    val = val.substr(val.find("=") + 1);
+  if (me) {
+    if (me->kind() == MonitorElement::Kind::REAL) {
+      val = std::to_string(me->getFloatValue());
+    } else if (me->kind() == MonitorElement::Kind::INT) {
+      val = std::to_string(me->getIntValue());
+    }
   }
 }
 //

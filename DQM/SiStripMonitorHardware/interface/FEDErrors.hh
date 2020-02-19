@@ -23,7 +23,7 @@
 #include "DataFormats/FEDRawData/interface/FEDRawData.h"
 #include "DataFormats/FEDRawData/interface/FEDNumbering.h"
 
-#include "DQMServices/Core/interface/MonitorElement.h"
+#include "DQMServices/Core/interface/DQMStore.h"
 
 #include "CondFormats/SiStripObjects/interface/SiStripFedCabling.h"
 
@@ -34,6 +34,9 @@ class TrackerTopology;
 
 class FEDErrors {
 public:
+  typedef dqm::legacy::MonitorElement MonitorElement;
+  typedef dqm::legacy::DQMStore DQMStore;
+
   struct FEDCounters {
     unsigned int nFEDErrors;
     unsigned int nDAQProblems;
@@ -145,7 +148,7 @@ public:
   bool fillFatalFEDErrors(const FEDRawData& aFedData, const unsigned int aPrintDebug);
 
   //expensive check: fatal but kept separate
-  bool fillCorruptBuffer(const sistrip::FEDBuffer* aBuffer);
+  bool fillCorruptBuffer(const sistrip::FEDBuffer& aBuffer);
 
   //FE/Channel check: rate of channels with error (only considering connected channels)
   float fillNonFatalFEDErrors(const sistrip::FEDBuffer* aBuffer, const SiStripFedCabling* aCabling = nullptr);
@@ -162,11 +165,11 @@ public:
                      const bool aDoFEMaj,
                      std::vector<std::vector<std::pair<unsigned int, unsigned int> > >& aFeMajFrac);
 
-  bool fillFEErrors(const sistrip::FEDBuffer* aBuffer,
+  bool fillFEErrors(const sistrip::FEDBuffer& aBuffer,
                     const bool aDoFEMaj,
                     std::vector<std::vector<std::pair<unsigned int, unsigned int> > >& aFeMajFrac);
 
-  bool fillChannelErrors(const sistrip::FEDBuffer* aBuffer,
+  bool fillChannelErrors(const sistrip::FEDBuffer& aBuffer,
                          bool& aFullDebug,
                          const unsigned int aPrintDebug,
                          unsigned int& aCounterMonitoring,

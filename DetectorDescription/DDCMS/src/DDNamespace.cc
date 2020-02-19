@@ -5,6 +5,8 @@
 #include "XML/XML.h"
 
 #include <TClass.h>
+#include "tbb/concurrent_unordered_map.h"
+#include "tbb/concurrent_vector.h"
 
 using namespace std;
 using namespace cms;
@@ -61,7 +63,12 @@ DDNamespace::~DDNamespace() {
   }
 }
 
-string DDNamespace::prepend(const string& n) const { return m_name + n; }
+string DDNamespace::prepend(const string& n) const {
+  if (strchr(n.c_str(), NAMESPACE_SEP) == nullptr)
+    return m_name + n;
+  else
+    return n;
+}
 
 string DDNamespace::realName(const string& v) const {
   size_t idx, idq, idp;
@@ -137,9 +144,6 @@ const dd4hep::Rotation3D& DDNamespace::rotation(const string& nam) const {
     if (i != m_context->rotations.end())
       return (*i).second;
   }
-  for (const auto& r : m_context->rotations) {
-    cout << r.first << endl;
-  }
   throw runtime_error("Unknown rotation identifier:" + nam);
 }
 
@@ -149,11 +153,14 @@ dd4hep::Volume DDNamespace::addVolumeNS(dd4hep::Volume vol) const {
   dd4hep::Material m = vol.material();
   vol->SetName(n.c_str());
   m_context->volumes[n] = vol;
+  const char* solidName = "Invalid solid";
+  if (s.isValid())         // Protect against seg fault
+    solidName = s.name();  // If Solid is not valid, s.name() will seg fault.
   dd4hep::printout(m_context->debug_volumes ? dd4hep::ALWAYS : dd4hep::DEBUG,
                    "DD4CMS",
-                   "+++ Add volume:%-38s Solid:%-26s[%-16s] Material:%s",
+                   "+++ Add volumeNS:%-38s Solid:%-26s[%-16s] Material:%s",
                    vol.name(),
-                   s.name(),
+                   solidName,
                    s.type(),
                    m.name());
   return vol;
@@ -166,11 +173,15 @@ dd4hep::Volume DDNamespace::addVolume(dd4hep::Volume vol) const {
   dd4hep::Material m = vol.material();
   //vol->SetName(n.c_str());
   m_context->volumes[n] = vol;
+  const char* solidName = "Invalid solid";
+  if (s.isValid())         // Protect against seg fault
+    solidName = s.name();  // If Solid is not valid, s.name() will seg fault.
   dd4hep::printout(m_context->debug_volumes ? dd4hep::ALWAYS : dd4hep::DEBUG,
                    "DD4CMS",
-                   "+++ Add volume:%-38s Solid:%-26s[%-16s] Material:%s",
+                   "+++ Add volume:%-38s as [%s] Solid:%-26s[%-16s] Material:%s",
                    vol.name(),
-                   s.name(),
+                   n.c_str(),
+                   solidName,
                    s.type(),
                    m.name());
   return vol;
@@ -199,7 +210,10 @@ dd4hep::Solid DDNamespace::addSolidNS(const string& name, dd4hep::Solid solid) c
                    solid->IsA()->GetName(),
                    name.c_str());
 
-  m_context->shapes.emplace(name, solid.setName(name));
+  auto shape = m_context->shapes.emplace(name, solid.setName(name));
+  if (!shape.second) {
+    m_context->shapes[name] = solid.setName(name);
+  }
 
   return solid;
 }
@@ -224,5 +238,19 @@ dd4hep::Solid DDNamespace::solid(const string& nam) const {
   i = m_context->shapes.find(nam);
   if (i != m_context->shapes.end())
     return (*i).second;
-  throw runtime_error("Unknown shape identifier:" + nam);
+  // Register a temporary shape
+  auto tmpShape = m_context->shapes.emplace(nam, dd4hep::Solid(nullptr));
+  return (*tmpShape.first).second;
+}
+
+std::vector<double> DDNamespace::vecDbl(const std::string& name) const {
+  cms::DDVectorsMap* registry = m_context->description.load()->extension<cms::DDVectorsMap>();
+  auto it = registry->find(name);
+  if (it != registry->end()) {
+    std::vector<double> result;
+    for (auto in : it->second)
+      result.emplace_back(in);
+    return result;
+  } else
+    return std::vector<double>();
 }

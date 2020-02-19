@@ -8,11 +8,6 @@
 #include "SimG4CMS/Calo/interface/HGCSD.h"
 #include "SimG4Core/Notification/interface/TrackInformation.h"
 #include "SimDataFormats/CaloTest/interface/HGCalTestNumbering.h"
-#include "DetectorDescription/Core/interface/DDFilter.h"
-#include "DetectorDescription/Core/interface/DDFilteredView.h"
-#include "DetectorDescription/Core/interface/DDLogicalPart.h"
-#include "DetectorDescription/Core/interface/DDMaterial.h"
-#include "DetectorDescription/Core/interface/DDValue.h"
 #include "FWCore/Utilities/interface/Exception.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -110,8 +105,8 @@ double HGCSD::getEnergyDeposit(const G4Step* aStep) {
   G4LogicalVolume* lv = aStep->GetPreStepPoint()->GetPhysicalVolume()->GetLogicalVolume();
   edm::LogVerbatim("HGCSim") << "HGCSD: Hit from standard path from " << lv->GetName() << " for Track "
                              << aStep->GetTrack()->GetTrackID() << " ("
-                             << aStep->GetTrack()->GetDefinition()->GetParticleName() << ") R = " << r << " Z = " << z
-                             << " slope = " << r / z << ":" << slopeMin_;
+                             << aStep->GetTrack()->GetDefinition()->GetParticleName() << ":" << parCode << ") R = " << r
+                             << " Z = " << z << " slope = " << r / z << ":" << slopeMin_;
 #endif
 
   // Apply fiductial volume
@@ -175,12 +170,14 @@ uint32_t HGCSD::setDetUnitId(const G4Step* aStep) {
     cell = touch->GetReplicaNumber(0);
   }
 #ifdef EDM_ML_DEBUG
+  const G4Material* mat = aStep->GetPreStepPoint()->GetMaterial();
   edm::LogVerbatim("HGCSim") << "Depths: " << touch->GetHistoryDepth() << " name " << touch->GetVolume(0)->GetName()
                              << ":" << touch->GetReplicaNumber(0) << "   " << touch->GetVolume(1)->GetName() << ":"
                              << touch->GetReplicaNumber(1) << "   " << touch->GetVolume(2)->GetName() << ":"
-                             << touch->GetReplicaNumber(2) << "   "
-                             << " layer:module:cell " << layer << ":" << module << ":" << cell << " Material "
-                             << mat->GetName() << ":" << aStep->GetPreStepPoint()->GetMaterial()->GetRadlen();
+                             << touch->GetReplicaNumber(2) << "    layer:module:cell " << layer << ":" << module << ":"
+                             << cell << " Material " << mat->GetName() << ":" << mat->GetRadlen();
+//for (int k = 0; k< touch->GetHistoryDepth(); ++k)
+//  edm::LogVerbatim("HGCSim") << "Level [" << k << "] " << touch->GetVolume(k)->GetName() << ":" << touch->GetReplicaNumber(k);
 #endif
   // The following statement should be examined later before elimination
   // VI: this is likely a check if media is vacuum - not needed

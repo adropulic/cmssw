@@ -88,6 +88,8 @@ OscarProducer::OscarProducer(edm::ParameterSet const& p) {
   produces<edm::PSimHitContainer>("TotemHitsT1");
   produces<edm::PSimHitContainer>("TotemHitsT2Gem");
   produces<edm::PSimHitContainer>("TotemHitsRP");
+  produces<edm::PSimHitContainer>("CTPPSPixelHits");
+  produces<edm::PSimHitContainer>("CTPPSTimingHits");
   produces<edm::PSimHitContainer>("FP420SI");
   produces<edm::PSimHitContainer>("BSCHits");
   produces<edm::PSimHitContainer>("PLTHits");
@@ -127,7 +129,7 @@ OscarProducer::OscarProducer(edm::ParameterSet const& p) {
   m_producers = m_runManager->producers();
 
   for (Producers::iterator itProd = m_producers.begin(); itProd != m_producers.end(); ++itProd) {
-    (*itProd)->registerProducts(*this);
+    (*itProd)->registerProducts(producesCollector());
   }
 
   //UIsession manager for message handling

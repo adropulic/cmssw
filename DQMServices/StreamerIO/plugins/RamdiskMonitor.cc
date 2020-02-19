@@ -6,9 +6,8 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
-#include "DQMServices/Core/interface/DQMEDAnalyzer.h"
+#include "DQMServices/Core/interface/DQMOneEDAnalyzer.h"
 #include "DQMServices/Core/interface/DQMStore.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
 
 #include "DQMServices/StreamerIO/plugins/DQMFileIterator.h"
 
@@ -26,7 +25,7 @@ namespace dqm {
   namespace rdm {
     struct Empty {};
   }  // namespace rdm
-  class RamdiskMonitor : public one::DQMEDAnalyzer<edm::LuminosityBlockCache<rdm::Empty>> {
+  class RamdiskMonitor : public DQMOneEDAnalyzer<edm::LuminosityBlockCache<rdm::Empty>> {
   public:
     RamdiskMonitor(const edm::ParameterSet &ps);
     ~RamdiskMonitor() override;

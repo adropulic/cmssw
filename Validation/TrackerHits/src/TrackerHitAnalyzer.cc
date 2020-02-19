@@ -11,7 +11,6 @@
 #include "DataFormats/DetId/interface/DetId.h"
 
 #include "DQMServices/Core/interface/DQMStore.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
 
 // tracker info
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
@@ -81,19 +80,6 @@ void TrackerHitAnalyzer::bookHistograms(DQMStore::IBooker &ibooker, const edm::R
   Char_t hname4[50], htitle4[80];
   Char_t hname5[50], htitle5[80];
   Char_t hname6[50], htitle6[80];
-
-  if (fDBE) {
-    if (verbose_) {
-      fDBE->setVerbose(1);
-    } else {
-      fDBE->setVerbose(0);
-    }
-  }
-
-  if (fDBE) {
-    if (verbose_)
-      fDBE->showDirStructure();
-  }
 
   if (fDBE != nullptr) {
     //   fDBE->setCurrentFolder("TrackerHitsV/TrackerHitTask");

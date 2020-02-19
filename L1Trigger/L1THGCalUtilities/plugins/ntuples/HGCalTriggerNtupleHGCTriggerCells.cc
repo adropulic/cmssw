@@ -47,8 +47,8 @@ private:
   edm::ESHandle<HGCalTriggerGeometryBase> geometry_;
 
   static const unsigned kPanelOffset_ = 0;
-  static const unsigned kPanelMask_ = 0x1F;
-  static const unsigned kSectorOffset_ = 5;
+  static const unsigned kPanelMask_ = 0x7F;
+  static const unsigned kSectorOffset_ = 7;
   static const unsigned kSectorMask_ = 0x7;
 
   int tc_n_;
@@ -129,8 +129,14 @@ void HGCalTriggerNtupleHGCTriggerCells::initialize(TTree& tree,
   tree.Branch(withPrefix("zside"), &tc_side_);
   tree.Branch(withPrefix("layer"), &tc_layer_);
   tree.Branch(withPrefix("wafer"), &tc_wafer_);
+  tree.Branch(withPrefix("waferu"), &tc_waferu_);
+  tree.Branch(withPrefix("waferv"), &tc_waferv_);
   tree.Branch(withPrefix("wafertype"), &tc_wafertype_);
+  tree.Branch(withPrefix("panel_number"), &tc_panel_number_);
+  tree.Branch(withPrefix("panel_sector"), &tc_panel_sector_);
   tree.Branch(withPrefix("cell"), &tc_cell_);
+  tree.Branch(withPrefix("cellu"), &tc_cellu_);
+  tree.Branch(withPrefix("cellv"), &tc_cellv_);
   tree.Branch(withPrefix("data"), &tc_data_);
   tree.Branch(withPrefix("uncompressedCharge"), &tc_uncompressedCharge_);
   tree.Branch(withPrefix("compressedCharge"), &tc_compressedCharge_);

@@ -1,6 +1,6 @@
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEGeneric.h"
 
-#include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
+#include "Geometry/CommonDetUnit/interface/PixelGeomDetUnit.h"
 #include "Geometry/TrackerGeometryBuilder/interface/RectangularPixelTopology.h"
 
 // this is needed to get errors from templates
@@ -59,7 +59,7 @@ PixelCPEGeneric::PixelCPEGeneric(edm::ParameterSet const& conf,
 
   // no clear what upgrade means, is it phase1, phase2? Probably delete.
   isUpgrade_ = false;
-  if (conf.exists("Upgrade") && conf.getParameter<bool>("Upgrade"))
+  if (conf.getParameter<bool>("Upgrade"))
     isUpgrade_ = true;
 
   // Select the position error source
@@ -120,7 +120,7 @@ PixelCPEGeneric::PixelCPEGeneric(edm::ParameterSet const& conf,
     yerr_endcap_ = {0.00289, 0.00025};
     yerr_endcap_def_ = 0.00180;
 
-    if (conf.exists("SmallPitch") && conf.getParameter<bool>("SmallPitch")) {
+    if (conf.getParameter<bool>("SmallPitch")) {
       xerr_barrel_l1_ = {0.00104, 0.000691, 0.00122};
       xerr_barrel_l1_def_ = 0.00321;
       yerr_barrel_l1_ = {0.00199, 0.00136, 0.0015, 0.00153, 0.00152, 0.00171, 0.00154, 0.00157, 0.00154};
@@ -143,8 +143,8 @@ PixelCPEGeneric::PixelCPEGeneric(edm::ParameterSet const& conf,
   }
 }
 
-PixelCPEBase::ClusterParam* PixelCPEGeneric::createClusterParam(const SiPixelCluster& cl) const {
-  return new ClusterParamGeneric(cl);
+std::unique_ptr<PixelCPEBase::ClusterParam> PixelCPEGeneric::createClusterParam(const SiPixelCluster& cl) const {
+  return std::make_unique<ClusterParamGeneric>(cl);
 }
 
 //-----------------------------------------------------------------------------
@@ -412,7 +412,7 @@ float PixelCPEGeneric::generic_position_formula(int size,                    //!
                                                 float eff_charge_cut_low,    //!< Use edge if > W_eff  &&&
                                                 float eff_charge_cut_high,   //!< Use edge if < W_eff  &&&
                                                 float size_cut               //!< Use edge when size == cuts
-                                                ) const {
+) const {
   //cout<<" in PixelCPEGeneric:generic_position_formula - "<<endl; //dk
 
   float geom_center = 0.5f * (upper_edge_first_pix + lower_edge_last_pix);
@@ -522,7 +522,7 @@ void PixelCPEGeneric::collect_edge_charges(ClusterParam& theClusterParamBase,  /
                                            int& Q_l_X,                         //!< output, Q last   in X
                                            int& Q_f_Y,                         //!< output, Q first  in Y
                                            int& Q_l_Y                          //!< output, Q last   in Y
-                                           ) const {
+) const {
   ClusterParamGeneric& theClusterParam = static_cast<ClusterParamGeneric&>(theClusterParamBase);
 
   // Initialize return variables.
@@ -743,4 +743,23 @@ LocalError PixelCPEGeneric::localError(DetParam const& theDetParam, ClusterParam
   auto yerr_sq = yerr * yerr;
 
   return LocalError(xerr_sq, 0, yerr_sq);
+}
+
+void PixelCPEGeneric::fillPSetDescription(edm::ParameterSetDescription& desc) {
+  desc.add<double>("eff_charge_cut_highX", 1.0);
+  desc.add<double>("eff_charge_cut_highY", 1.0);
+  desc.add<double>("eff_charge_cut_lowX", 0.0);
+  desc.add<double>("eff_charge_cut_lowY", 0.0);
+  desc.add<double>("size_cutX", 3.0);
+  desc.add<double>("size_cutY", 3.0);
+  desc.add<double>("EdgeClusterErrorX", 50.0);
+  desc.add<double>("EdgeClusterErrorY", 85.0);
+  desc.add<bool>("inflate_errors", false);
+  desc.add<bool>("inflate_all_errors_no_trk_angle", false);
+  desc.add<bool>("UseErrorsFromTemplates", true);
+  desc.add<bool>("TruncatePixelCharge", true);
+  desc.add<bool>("IrradiationBiasCorrection", false);
+  desc.add<bool>("DoCosmics", false);
+  desc.add<bool>("Upgrade", false);
+  desc.add<bool>("SmallPitch", false);
 }

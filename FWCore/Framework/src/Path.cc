@@ -89,6 +89,7 @@ namespace edm {
         if (stopProcessingEvent_) {
           *stopProcessingEvent_ = true;
         }
+        break;
       }
       default: {
         if (isEvent)
@@ -239,7 +240,8 @@ namespace edm {
       } catch (cms::Exception& oldEx) {
         pEx = std::unique_ptr<cms::Exception>(oldEx.clone());
       }
-      try {
+      // Caught exception is propagated via WaitingTaskList
+      CMS_SA_ALLOW try {
         std::ostringstream ost;
         ost << iEP.id();
         shouldContinue = handleWorkerFailure(*pEx,
@@ -292,7 +294,8 @@ namespace edm {
       updateCounters(iSucceeded, true);
       recordStatus(iModuleIndex, true);
     }
-    try {
+    // Caught exception is propagated via WaitingTaskList
+    CMS_SA_ALLOW try {
       HLTPathStatus status(state_, iModuleIndex);
 
       if (pathStatusInserter_) {  // pathStatusInserter is null for EndPaths

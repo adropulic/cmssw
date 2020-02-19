@@ -1,5 +1,4 @@
 #include "Validation/RecoMuon/plugins/MuonTrackValidator.h"
-#include "DQMServices/ClientConfig/interface/FitSlicesYTool.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
@@ -22,7 +21,9 @@
 using namespace std;
 using namespace edm;
 
-void MuonTrackValidator::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const&, edm::EventSetup const& setup) {
+void MuonTrackValidator::bookHistograms(DQMEDAnalyzer::DQMStore::IBooker& ibooker,
+                                        edm::Run const&,
+                                        edm::EventSetup const& setup) {
   for (unsigned int ww = 0; ww < associators.size(); ww++) {
     for (unsigned int www = 0; www < label.size(); www++) {
       ibooker.cd();

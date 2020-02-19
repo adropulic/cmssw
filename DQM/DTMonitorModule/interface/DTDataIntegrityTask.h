@@ -18,14 +18,10 @@
 #include <FWCore/Framework/interface/LuminosityBlock.h>
 
 #include <DQMServices/Core/interface/DQMStore.h>
-#include <DQMServices/Core/interface/MonitorElement.h>
-#include <DQMServices/Core/interface/DQMEDAnalyzer.h>
+#include <DQMServices/Core/interface/DQMOneEDAnalyzer.h>
 
 #include "DataFormats/DTDigi/interface/DTControlData.h"
 #include "DataFormats/DTDigi/interface/DTuROSControlData.h"
-#include "DQMServices/Core/interface/DQMStore.h"
-
-#include "DQMServices/Core/interface/MonitorElement.h"
 
 #include <fstream>
 #include <map>
@@ -40,7 +36,7 @@ class DTuROSROSData;
 class DTuROSFEDData;
 class DTTimeEvolutionHisto;
 
-class DTDataIntegrityTask : public one::DQMEDAnalyzer<edm::one::WatchLuminosityBlocks> {
+class DTDataIntegrityTask : public DQMOneEDAnalyzer<edm::one::WatchLuminosityBlocks> {
 public:
   DTDataIntegrityTask(const edm::ParameterSet& ps);
 

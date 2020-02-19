@@ -32,7 +32,7 @@
 #include "DataFormats/BTauReco/interface/CandSoftLeptonTagInfo.h"
 #include "DataFormats/BTauReco/interface/SoftLeptonTagInfo.h"
 #include "SimDataFormats/JetMatching/interface/JetFlavourInfo.h"
-
+#include "DataFormats/BTauReco/interface/PixelClusterTagInfo.h"
 #include "DataFormats/BTauReco/interface/CandSecondaryVertexTagInfo.h"
 #include "DataFormats/BTauReco/interface/SecondaryVertexTagInfo.h"
 #include "DataFormats/BTauReco/interface/BoostedDoubleSVTagInfo.h"
@@ -173,6 +173,9 @@ namespace pat {
                                     const unsigned int& set = 0) const {
       return correctedJet(level, flavor, set).p4();
     };
+    /// Scale energy and correspondingly adjust raw jec factors
+    void scaleEnergy(double fScale) override { scaleEnergy(fScale, "Unscaled"); }
+    void scaleEnergy(double fScale, const std::string& level);
 
   private:
     /// index of the set of jec factors with given label; returns -1 if no set
@@ -221,6 +224,10 @@ namespace pat {
     const reco::CandSecondaryVertexTagInfo* tagInfoCandSecondaryVertex(const std::string& label = "") const;
     const reco::SecondaryVertexTagInfo* tagInfoSecondaryVertex(const std::string& label = "") const;
     const reco::BoostedDoubleSVTagInfo* tagInfoBoostedDoubleSV(const std::string& label = "") const;
+    /// get a tagInfo with the given name and type or NULL if none is found.
+    /// If the label is empty or not specified, it returns the first tagInfo of that type (if any one exists)
+    /// you should omit the 'TagInfos' part from the label
+    const reco::PixelClusterTagInfo* tagInfoPixelCluster(const std::string& label = "") const;
     /// method to add a algolabel-discriminator pair
     void addBDiscriminatorPair(const std::pair<std::string, float>& thePair);
     /// sets a tagInfo with the given name from an edm::Ptr<T> to it.

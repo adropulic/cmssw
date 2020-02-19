@@ -22,11 +22,13 @@
 #include <vector>
 
 namespace cms {
+  struct DDSpecPar;
 
   struct Filter {
     std::vector<std::string_view> keys;
     std::unique_ptr<Filter> next;
     struct Filter* up;
+    const DDSpecPar* spec = nullptr;
   };
 
   namespace dd {
@@ -34,8 +36,9 @@ namespace cms {
     int contains(std::string_view, std::string_view);
     bool isRegex(std::string_view);
     bool compareEqual(std::string_view, std::string_view);
-    std::string_view realTopName(std::string_view input);
+    std::string_view realTopName(std::string_view);
     std::vector<std::string_view> split(std::string_view, const char*);
+    std::string_view noNamespace(std::string_view);
   }  // namespace dd
 }  // namespace cms
 

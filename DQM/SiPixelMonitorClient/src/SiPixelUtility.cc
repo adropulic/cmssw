@@ -1,7 +1,6 @@
 #include "DQM/SiPixelMonitorClient/interface/SiPixelContinuousPalette.h"
 #include "DQM/SiPixelMonitorClient/interface/SiPixelUtility.h"
 #include "DQMServices/Core/interface/DQMStore.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
 #include <cstdlib>
 
 using namespace std;
@@ -161,28 +160,6 @@ int SiPixelUtility::computeErrorCode(int status) {
       code = 3;
       break;
   }  // end switch
-
-  return code;
-}
-
-int SiPixelUtility::computeErrorCode(DQMStore *bei, string &module_path) {
-  int status = bei->getStatus(module_path);
-
-  int code = -1;
-  switch (status) {
-    case dqm::qstatus::STATUS_OK:
-      code = 0;
-      break;
-    case dqm::qstatus::INSUF_STAT:
-      code = 1;
-      break;
-    case dqm::qstatus::WARNING:
-      code = 2;
-      break;
-    case dqm::qstatus::ERROR:
-      code = 3;
-      break;
-  }  // end of switch
 
   return code;
 }

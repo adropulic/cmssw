@@ -32,7 +32,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
+#include "DQMServices/Core/interface/DQMStore.h"
 #include "FWCore/MessageLogger/interface/ErrorSummaryEntry.h"
 
 #include <DQMServices/Core/interface/DQMEDAnalyzer.h>
@@ -41,7 +41,6 @@
 #include <string>
 #include <map>
 
-class DQMStore;
 class GenericTriggerEventFlag;
 
 class GetLumi;
@@ -61,9 +60,6 @@ private:
   //      virtual void beginJob() ;
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void endJob() override;
-
-  //      virtual void beginRun(edm::Run const&, edm::EventSetup const&);
-  void endRun(edm::Run const&, edm::EventSetup const&) override;
 
   void bookHistograms(DQMStore::IBooker&, edm::Run const&, edm::EventSetup const&) override;
 

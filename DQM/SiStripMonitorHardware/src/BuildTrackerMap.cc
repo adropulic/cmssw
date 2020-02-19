@@ -54,6 +54,9 @@
 
 class BuildTrackerMapPlugin : public edm::EDAnalyzer {
 public:
+  typedef dqm::legacy::MonitorElement MonitorElement;
+  typedef dqm::legacy::DQMStore DQMStore;
+
   explicit BuildTrackerMapPlugin(const edm::ParameterSet&);
   ~BuildTrackerMapPlugin() override {}
 
@@ -150,7 +153,6 @@ void BuildTrackerMapPlugin::read(bool aMechView,
   }
 
   //lDqmStore->setCurrentFolder(dirName);
-  //lDqmStore->showDirStructure();
 
   unsigned int nFailTot = 0;
   unsigned int nTotTot = 0;

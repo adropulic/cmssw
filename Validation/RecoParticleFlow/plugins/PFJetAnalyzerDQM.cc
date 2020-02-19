@@ -2,7 +2,6 @@
 #include "DQMOffline/PFTau/interface/Matchers.h"
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
 #include "DQMServices/Core/interface/DQMStore.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
 #include "DataFormats/JetReco/interface/Jet.h"
 #include "DataFormats/JetReco/interface/PFJet.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
@@ -27,8 +26,6 @@ public:
 protected:
   //Book histograms
   void bookHistograms(DQMStore::IBooker&, edm::Run const&, edm::EventSetup const&) override;
-  void dqmBeginRun(const edm::Run&, const edm::EventSetup&) override {}
-  void endRun(const edm::Run&, const edm::EventSetup&) override {}
 
 private:
   class Plot1DInBin {

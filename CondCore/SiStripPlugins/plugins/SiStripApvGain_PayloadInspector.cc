@@ -560,17 +560,24 @@ namespace {
   /************************************************
     TrackerMap of SiStripApvGains (ratio with previous gain per detid)
   *************************************************/
-  template <int nsigma>
-  class SiStripApvGainsRatioWithPreviousIOVTrackerMap : public cond::payloadInspector::PlotImage<SiStripApvGain> {
+
+  class SiStripApvGainsRatioWithPreviousIOVTrackerMapBase : public cond::payloadInspector::PlotImage<SiStripApvGain> {
   public:
-    SiStripApvGainsRatioWithPreviousIOVTrackerMap()
+    SiStripApvGainsRatioWithPreviousIOVTrackerMapBase()
         : cond::payloadInspector::PlotImage<SiStripApvGain>("Tracker Map of ratio of SiStripGains with previous IOV") {
-      setSingleIov(false);
+      cond::payloadInspector::PlotBase::addInputParam("nsigma");
     }
 
     bool fill(const std::vector<std::tuple<cond::Time_t, cond::Hash>>& iovs) override {
-      std::vector<std::tuple<cond::Time_t, cond::Hash>> sorted_iovs = iovs;
+      unsigned int nsigma(1);
 
+      auto paramValues = cond::payloadInspector::PlotBase::inputParamValues();
+      auto ip = paramValues.find("nsigma");
+      if (ip != paramValues.end()) {
+        nsigma = boost::lexical_cast<unsigned int>(ip->second);
+      }
+
+      std::vector<std::tuple<cond::Time_t, cond::Hash>> sorted_iovs = iovs;
       // make absolute sure the IOVs are sortd by since
       std::sort(begin(sorted_iovs), end(sorted_iovs), [](auto const& t1, auto const& t2) {
         return std::get<0>(t1) < std::get<0>(t2);
@@ -645,24 +652,46 @@ namespace {
     }
   };
 
-  typedef SiStripApvGainsRatioWithPreviousIOVTrackerMap<1> SiStripApvGainsAvgDeviationRatio1sigmaTrackerMap;
-  typedef SiStripApvGainsRatioWithPreviousIOVTrackerMap<2> SiStripApvGainsAvgDeviationRatio2sigmaTrackerMap;
-  typedef SiStripApvGainsRatioWithPreviousIOVTrackerMap<3> SiStripApvGainsAvgDeviationRatio3sigmaTrackerMap;
+  class SiStripApvGainsAvgDeviationRatioWithPreviousIOVTrackerMap
+      : public SiStripApvGainsRatioWithPreviousIOVTrackerMapBase {
+  public:
+    SiStripApvGainsAvgDeviationRatioWithPreviousIOVTrackerMap() : SiStripApvGainsRatioWithPreviousIOVTrackerMapBase() {
+      this->setSingleIov(false);
+    }
+  };
+
+  class SiStripApvGainsAvgDeviationRatioTrackerMapTwoTags : public SiStripApvGainsRatioWithPreviousIOVTrackerMapBase {
+  public:
+    SiStripApvGainsAvgDeviationRatioTrackerMapTwoTags() : SiStripApvGainsRatioWithPreviousIOVTrackerMapBase() {
+      this->setTwoTags(true);
+    }
+  };
 
   /************************************************
    TrackerMap of SiStripApvGains (ratio for largest deviation with previous gain per detid)
   *************************************************/
-  template <int nsigma>
-  class SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMap
+
+  class SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMapBase
       : public cond::payloadInspector::PlotImage<SiStripApvGain> {
   public:
-    SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMap()
+    SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMapBase()
         : cond::payloadInspector::PlotImage<SiStripApvGain>(
               "Tracker Map of ratio (for largest deviation) of SiStripGains with previous IOV") {
-      setSingleIov(false);
+      cond::payloadInspector::PlotBase::addInputParam("nsigma");
     }
 
     bool fill(const std::vector<std::tuple<cond::Time_t, cond::Hash>>& iovs) override {
+      unsigned int nsigma(1);
+
+      auto paramValues = cond::payloadInspector::PlotBase::inputParamValues();
+      auto ip = paramValues.find("nsigma");
+      if (ip != paramValues.end()) {
+        nsigma = boost::lexical_cast<unsigned int>(ip->second);
+        std::cout << "using custom z-axis saturation: " << nsigma << " sigmas" << std::endl;
+      } else {
+        std::cout << "using default saturation: " << nsigma << " sigmas" << std::endl;
+      }
+
       std::vector<std::tuple<cond::Time_t, cond::Hash>> sorted_iovs = iovs;
 
       // make absolute sure the IOVs are sortd by since
@@ -758,9 +787,23 @@ namespace {
     }
   };
 
-  typedef SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMap<1> SiStripApvGainsMaxDeviationRatio1sigmaTrackerMap;
-  typedef SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMap<2> SiStripApvGainsMaxDeviationRatio2sigmaTrackerMap;
-  typedef SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMap<3> SiStripApvGainsMaxDeviationRatio3sigmaTrackerMap;
+  class SiStripApvGainsMaxDeviationRatioWithPreviousIOVTrackerMap
+      : public SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMapBase {
+  public:
+    SiStripApvGainsMaxDeviationRatioWithPreviousIOVTrackerMap()
+        : SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMapBase() {
+      this->setSingleIov(false);
+    }
+  };
+
+  class SiStripApvGainsMaxDeviationRatioTrackerMapTwoTags
+      : public SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMapBase {
+  public:
+    SiStripApvGainsMaxDeviationRatioTrackerMapTwoTags()
+        : SiStripApvGainsRatioMaxDeviationWithPreviousIOVTrackerMapBase() {
+      this->setTwoTags(true);
+    }
+  };
 
   /************************************************
     TrackerMap of SiStripApvGains (maximum gain per detid)
@@ -1156,11 +1199,9 @@ namespace {
     Compare Gains from 2 IOVs, 2 pads canvas, firsr for ratio, second for scatter plot
   *************************************************/
 
-  class SiStripApvGainsComparator : public cond::payloadInspector::PlotImage<SiStripApvGain> {
+  class SiStripApvGainsComparatorBase : public cond::payloadInspector::PlotImage<SiStripApvGain> {
   public:
-    SiStripApvGainsComparator() : cond::payloadInspector::PlotImage<SiStripApvGain>("SiStripGains Comparison") {
-      setSingleIov(false);
-    }
+    SiStripApvGainsComparatorBase() : cond::payloadInspector::PlotImage<SiStripApvGain>("SiStripGains Comparison") {}
 
     bool fill(const std::vector<std::tuple<cond::Time_t, cond::Hash>>& iovs) override {
       std::vector<std::tuple<cond::Time_t, cond::Hash>> sorted_iovs = iovs;
@@ -1268,22 +1309,22 @@ namespace {
 
         if (subid == StripSubdetector::TIB) {
           ratios["TIB"]->Fill(ratio);
-          scatters["TIB"]->Fill(lastmap[index], firstmap[index]);
+          scatters["TIB"]->Fill(firstmap[index], lastmap[index]);
         }
 
         if (subid == StripSubdetector::TOB) {
           ratios["TOB"]->Fill(ratio);
-          scatters["TOB"]->Fill(lastmap[index], firstmap[index]);
+          scatters["TOB"]->Fill(firstmap[index], lastmap[index]);
         }
 
         if (subid == StripSubdetector::TID) {
           ratios["TID"]->Fill(ratio);
-          scatters["TID"]->Fill(lastmap[index], firstmap[index]);
+          scatters["TID"]->Fill(firstmap[index], lastmap[index]);
         }
 
         if (subid == StripSubdetector::TEC) {
           ratios["TEC"]->Fill(ratio);
-          scatters["TEC"]->Fill(lastmap[index], firstmap[index]);
+          scatters["TEC"]->Fill(firstmap[index], lastmap[index]);
         }
       }
 
@@ -1349,16 +1390,24 @@ namespace {
     }
   };
 
+  class SiStripApvGainsComparatorSingleTag : public SiStripApvGainsComparatorBase {
+  public:
+    SiStripApvGainsComparatorSingleTag() : SiStripApvGainsComparatorBase() { setSingleIov(false); }
+  };
+
+  class SiStripApvGainsComparatorTwoTags : public SiStripApvGainsComparatorBase {
+  public:
+    SiStripApvGainsComparatorTwoTags() : SiStripApvGainsComparatorBase() { setTwoTags(true); }
+  };
+
   //*******************************************//
   // Compare Gains from 2 IOVs
   //******************************************//
 
-  class SiStripApvGainsValuesComparator : public cond::payloadInspector::PlotImage<SiStripApvGain> {
+  class SiStripApvGainsValuesComparatorBase : public cond::payloadInspector::PlotImage<SiStripApvGain> {
   public:
-    SiStripApvGainsValuesComparator()
-        : cond::payloadInspector::PlotImage<SiStripApvGain>("Comparison of SiStrip APV gains values") {
-      setSingleIov(false);
-    }
+    SiStripApvGainsValuesComparatorBase()
+        : cond::payloadInspector::PlotImage<SiStripApvGain>("Comparison of SiStrip APV gains values") {}
 
     bool fill(const std::vector<std::tuple<cond::Time_t, cond::Hash>>& iovs) override {
       TH1F::SetDefaultSumw2(true);
@@ -1517,18 +1566,26 @@ namespace {
     }
   };
 
+  class SiStripApvGainsValuesComparatorSingleTag : public SiStripApvGainsValuesComparatorBase {
+  public:
+    SiStripApvGainsValuesComparatorSingleTag() : SiStripApvGainsValuesComparatorBase() { setSingleIov(false); }
+  };
+
+  class SiStripApvGainsValuesComparatorTwoTags : public SiStripApvGainsValuesComparatorBase {
+  public:
+    SiStripApvGainsValuesComparatorTwoTags() : SiStripApvGainsValuesComparatorBase() { setTwoTags(true); }
+  };
+
   //*******************************************//
   // Compare Gains ratio from 2 IOVs, region by region
   //******************************************//
 
-  class SiStripApvGainsRatioComparatorByRegion : public cond::payloadInspector::PlotImage<SiStripApvGain> {
+  class SiStripApvGainsRatioComparatorByRegionBase : public cond::payloadInspector::PlotImage<SiStripApvGain> {
   public:
-    SiStripApvGainsRatioComparatorByRegion()
+    SiStripApvGainsRatioComparatorByRegionBase()
         : cond::payloadInspector::PlotImage<SiStripApvGain>("Module by Module Comparison of SiStrip APV gains"),
           m_trackerTopo{StandaloneTrackerTopology::fromTrackerParametersXMLFile(
-              edm::FileInPath("Geometry/TrackerCommonData/data/trackerParameters.xml").fullPath())} {
-      setSingleIov(false);
-    }
+              edm::FileInPath("Geometry/TrackerCommonData/data/trackerParameters.xml").fullPath())} {}
 
     bool fill(const std::vector<std::tuple<cond::Time_t, cond::Hash>>& iovs) override {
       //gStyle->SetPalette(5);
@@ -1720,18 +1777,28 @@ namespace {
     }
   };
 
+  class SiStripApvGainsRatioComparatorByRegionSingleTag : public SiStripApvGainsRatioComparatorByRegionBase {
+  public:
+    SiStripApvGainsRatioComparatorByRegionSingleTag() : SiStripApvGainsRatioComparatorByRegionBase() {
+      setSingleIov(false);
+    }
+  };
+
+  class SiStripApvGainsRatioComparatorByRegionTwoTags : public SiStripApvGainsRatioComparatorByRegionBase {
+  public:
+    SiStripApvGainsRatioComparatorByRegionTwoTags() : SiStripApvGainsRatioComparatorByRegionBase() { setTwoTags(true); }
+  };
+
   /************************************************
     Compare Gains for each tracker region
   *************************************************/
 
-  class SiStripApvGainsComparatorByRegion : public cond::payloadInspector::PlotImage<SiStripApvGain> {
+  class SiStripApvGainsComparatorByRegionBase : public cond::payloadInspector::PlotImage<SiStripApvGain> {
   public:
-    SiStripApvGainsComparatorByRegion()
+    SiStripApvGainsComparatorByRegionBase()
         : cond::payloadInspector::PlotImage<SiStripApvGain>("SiStripGains Comparison By Region"),
           m_trackerTopo{StandaloneTrackerTopology::fromTrackerParametersXMLFile(
-              edm::FileInPath("Geometry/TrackerCommonData/data/trackerParameters.xml").fullPath())} {
-      setSingleIov(false);
-    }
+              edm::FileInPath("Geometry/TrackerCommonData/data/trackerParameters.xml").fullPath())} {}
 
     bool fill(const std::vector<std::tuple<cond::Time_t, cond::Hash>>& iovs) override {
       std::vector<std::tuple<cond::Time_t, cond::Hash>> sorted_iovs = iovs;
@@ -1891,6 +1958,16 @@ namespace {
     TrackerTopology m_trackerTopo;
   };
 
+  class SiStripApvGainsComparatorByRegionSingleTag : public SiStripApvGainsComparatorByRegionBase {
+  public:
+    SiStripApvGainsComparatorByRegionSingleTag() : SiStripApvGainsComparatorByRegionBase() { setSingleIov(false); }
+  };
+
+  class SiStripApvGainsComparatorByRegionTwoTags : public SiStripApvGainsComparatorByRegionBase {
+  public:
+    SiStripApvGainsComparatorByRegionTwoTags() : SiStripApvGainsComparatorByRegionBase() { setTwoTags(true); }
+  };
+
   /************************************************
     Plot gain averages by region 
   *************************************************/
@@ -2013,10 +2090,14 @@ PAYLOAD_INSPECTOR_MODULE(SiStripApvGain) {
   PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsValue);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsTest);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsByRegion);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsComparator);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsValuesComparator);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsComparatorByRegion);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsRatioComparatorByRegion);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsComparatorSingleTag);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsComparatorTwoTags);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsValuesComparatorSingleTag);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsValuesComparatorTwoTags);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsComparatorByRegionSingleTag);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsComparatorByRegionTwoTags);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsRatioComparatorByRegionSingleTag);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsRatioComparatorByRegionTwoTags);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvBarrelGainsByLayer);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvAbsoluteBarrelGainsByLayer);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvEndcapMinusGainsByDisk);
@@ -2027,12 +2108,10 @@ PAYLOAD_INSPECTOR_MODULE(SiStripApvGain) {
   PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsDefaultTrackerMap);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsMaximumTrackerMap);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsMinimumTrackerMap);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsAvgDeviationRatio1sigmaTrackerMap);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsAvgDeviationRatio2sigmaTrackerMap);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsAvgDeviationRatio3sigmaTrackerMap);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsMaxDeviationRatio1sigmaTrackerMap);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsMaxDeviationRatio2sigmaTrackerMap);
-  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsMaxDeviationRatio3sigmaTrackerMap);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsAvgDeviationRatioWithPreviousIOVTrackerMap);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsAvgDeviationRatioTrackerMapTwoTags);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsMaxDeviationRatioWithPreviousIOVTrackerMap);
+  PAYLOAD_INSPECTOR_CLASS(SiStripApvGainsMaxDeviationRatioTrackerMapTwoTags);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvGainByRunMeans);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvGainMin_History);
   PAYLOAD_INSPECTOR_CLASS(SiStripApvGainMax_History);

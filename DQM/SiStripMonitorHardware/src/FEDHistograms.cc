@@ -349,14 +349,14 @@ void FEDHistograms::fillLumiHistograms(const FEDErrors::LumiErrors& aLumErr) {
 
 bool FEDHistograms::cmHistosEnabled() { return (medianAPV0_.enabled || medianAPV1_.enabled); }
 
-MonitorElement* FEDHistograms::cmHistPointer(bool aApv1) {
+FEDHistograms::MonitorElement* FEDHistograms::cmHistPointer(bool aApv1) {
   if (!aApv1)
     return medianAPV0_.monitorEle;
   else
     return medianAPV1_.monitorEle;
 }
 
-MonitorElement* FEDHistograms::getFedvsAPVpointer() { return fedIdVsApvId_.monitorEle; }
+FEDHistograms::MonitorElement* FEDHistograms::getFedvsAPVpointer() { return fedIdVsApvId_.monitorEle; }
 
 void FEDHistograms::bookTopLevelHistograms(DQMStore::IBooker& ibooker,
                                            const TkDetMap* tkDetMap,
@@ -895,18 +895,20 @@ void FEDHistograms::bookTopLevelHistograms(DQMStore::IBooker& ibooker,
 
   ibooker.setCurrentFolder(lBaseDir + "/PerLumiSection");
 
-  bookHistogram(ibooker,
-                lumiErrorFraction_,
-                "lumiErrorFraction",
-                "Fraction of error per lumi section vs subdetector",
-                6,
-                0.5,
-                6.5,
-                "SubDetId");
+  {
+    auto scope = DQMStore::IBooker::UseLumiScope(ibooker);
+    bookHistogram(ibooker,
+                  lumiErrorFraction_,
+                  "lumiErrorFraction",
+                  "Fraction of error per lumi section vs subdetector",
+                  6,
+                  0.5,
+                  6.5,
+                  "SubDetId");
+  }
 
   //Set special property for lumi ME
   if (lumiErrorFraction_.enabled && lumiErrorFraction_.monitorEle) {
-    lumiErrorFraction_.monitorEle->setLumiFlag();
     lumiErrorFraction_.monitorEle->setBinLabel(1, "TECB");
     lumiErrorFraction_.monitorEle->setBinLabel(2, "TECF");
     lumiErrorFraction_.monitorEle->setBinLabel(3, "TIB");

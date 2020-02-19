@@ -41,7 +41,6 @@ class SteppingAction;
 class CMSSteppingVerbose;
 
 class DDDWorld;
-class DDG4ProductionCuts;
 class CustomUIsession;
 
 class G4RunManagerKernel;
@@ -94,7 +93,7 @@ private:
   edm::EDGetTokenT<edm::LHCTransportLinkContainer> m_LHCtr;
 
   bool m_nonBeam;
-  std::unique_ptr<CustomUIsession> m_UIsession;
+  CustomUIsession* m_UIsession;
   std::unique_ptr<PhysicsList> m_physicsList;
   PrimaryTransformer* m_primaryTransformer;
 
@@ -115,6 +114,7 @@ private:
   std::string m_PhysicsTablesDir;
   bool m_StorePhysicsTables;
   bool m_RestorePhysicsTables;
+  bool m_UseParametrisedEMPhysics;
   int m_EvtMgrVerbosity;
   bool m_check;
   edm::ParameterSet m_pField;
@@ -132,7 +132,6 @@ private:
   std::vector<SensitiveTkDetector*> m_sensTkDets;
   std::vector<SensitiveCaloDetector*> m_sensCaloDets;
 
-  std::unique_ptr<DDG4ProductionCuts> m_prodCuts;
   std::unique_ptr<CMSSteppingVerbose> m_sVerbose;
   SimActivityRegistry m_registry;
   std::vector<std::shared_ptr<SimWatcher> > m_watchers;

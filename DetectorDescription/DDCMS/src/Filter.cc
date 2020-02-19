@@ -12,8 +12,6 @@ namespace cms {
       if (!isRegex(name)) {
         return (name == node);
       } else {
-        if (name.front() != node.front())
-          return false;
         regex pattern({name.data(), name.size()});
         return regex_match(begin(node), end(node), pattern);
       }
@@ -56,6 +54,13 @@ namespace cms {
       if (start < str.length())
         ret.emplace_back(str.substr(start, str.length() - start));
       return ret;
+    }
+
+    std::string_view noNamespace(std::string_view input) {
+      std::string_view v = input;
+      auto first = v.find_first_of(":");
+      v.remove_prefix(std::min(first + 1, v.size()));
+      return v;
     }
   }  // namespace dd
 }  // namespace cms

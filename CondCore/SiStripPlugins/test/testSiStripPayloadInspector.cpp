@@ -10,10 +10,11 @@
 
 #include "FWCore/PluginManager/interface/PluginManager.h"
 #include "FWCore/PluginManager/interface/standard.h"
-#include "FWCore/PluginManager/interface/SharedLibrary.h"
 #include "FWCore/ServiceRegistry/interface/ServiceRegistry.h"
 
 int main(int argc, char** argv) {
+  Py_Initialize();
+
   edmplugin::PluginManager::Config config;
   edmplugin::PluginManager::configure(edmplugin::standard::config());
 
@@ -32,6 +33,7 @@ int main(int argc, char** argv) {
   std::string runTimeType = cond::time::timeTypeName(cond::runnumber);
   cond::Time_t start = boost::lexical_cast<unsigned long long>(132440);
   cond::Time_t end = boost::lexical_cast<unsigned long long>(285368);
+  boost::python::dict inputs;
 
   std::cout << "## Exercising Gains plots " << std::endl;
 
@@ -39,27 +41,31 @@ int main(int argc, char** argv) {
   histo1.process(connectionString, tag, runTimeType, start, start);
   std::cout << histo1.data() << std::endl;
 
-  SiStripApvGainsAvgDeviationRatio1sigmaTrackerMap histo2;
+  SiStripApvGainsAvgDeviationRatioWithPreviousIOVTrackerMap histo2;
+  inputs["nsigma"] = "1";
+  histo2.setInputParamValues(inputs);
   histo2.process(connectionString, tag, runTimeType, start, end);
   std::cout << histo2.data() << std::endl;
 
-  SiStripApvGainsMaxDeviationRatio1sigmaTrackerMap histo3;
+  SiStripApvGainsMaxDeviationRatioWithPreviousIOVTrackerMap histo3;
+  inputs["nsigma"] = "1";
+  histo3.setInputParamValues(inputs);
   histo3.process(connectionString, tag, runTimeType, start, end);
   std::cout << histo3.data() << std::endl;
 
-  SiStripApvGainsValuesComparator histo4;
+  SiStripApvGainsValuesComparatorSingleTag histo4;
   histo4.process(connectionString, tag, runTimeType, start, end);
   std::cout << histo4.data() << std::endl;
 
-  SiStripApvGainsComparator histo5;
+  SiStripApvGainsComparatorSingleTag histo5;
   histo5.process(connectionString, tag, runTimeType, start, end);
   std::cout << histo5.data() << std::endl;
 
-  SiStripApvGainsComparatorByRegion histo6;
+  SiStripApvGainsComparatorByRegionSingleTag histo6;
   histo6.process(connectionString, tag, runTimeType, start, end);
   std::cout << histo6.data() << std::endl;
 
-  SiStripApvGainsRatioComparatorByRegion histo7;
+  SiStripApvGainsRatioComparatorByRegionSingleTag histo7;
   histo7.process(connectionString, tag, runTimeType, start, end);
   std::cout << histo7.data() << std::endl;
 
@@ -75,13 +81,19 @@ int main(int argc, char** argv) {
   histo8.process(connectionString, tag, runTimeType, start, start);
   std::cout << histo8.data() << std::endl;
 
-  SiStripNoiseValueComparisonPerAPV histo9;
+  SiStripNoiseValueComparisonPerAPVSingleTag histo9;
   histo9.process(connectionString, tag, runTimeType, start, end);
   std::cout << histo9.data() << std::endl;
 
-  SiStripNoiseComparatorMeanByRegion histoCompareMeanByRegion;
+  SiStripNoiseComparatorMeanByRegionSingleTag histoCompareMeanByRegion;
   histoCompareMeanByRegion.process(connectionString, tag, runTimeType, start, start);
   std::cout << histoCompareMeanByRegion.data() << std::endl;
+
+  SiStripNoisePerDetId histoNoiseForDetId;
+  inputs["DetId"] = "470148232";
+  histoNoiseForDetId.setInputParamValues(inputs);
+  histoNoiseForDetId.process(connectionString, tag, runTimeType, start, start);
+  std::cout << histoNoiseForDetId.data() << std::endl;
 
   // Pedestals
 
@@ -95,9 +107,14 @@ int main(int argc, char** argv) {
   histo10.process(connectionString, tag, runTimeType, start, start);
   std::cout << histo10.data() << std::endl;
 
-  SiStripPedestalValueComparisonPerModule histo11;
+  SiStripPedestalValueComparisonPerModuleSingleTag histo11;
   histo11.process(connectionString, tag, runTimeType, start, end);
   std::cout << histo11.data() << std::endl;
+
+  SiStripPedestalPerDetId histoPedestalForDetId;
+  histoPedestalForDetId.setInputParamValues(inputs);
+  histoPedestalForDetId.process(connectionString, tag, runTimeType, start, start);
+  std::cout << histoPedestalForDetId.data() << std::endl;
 
   //Latency
 
@@ -125,4 +142,6 @@ int main(int argc, char** argv) {
   SiStripThresholdValueHigh histo14;
   histo14.process(connectionString, tag, runTimeType, start, start);
   std::cout << histo14.data() << std::endl;
+
+  Py_Finalize();
 }

@@ -14,7 +14,6 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "DQMServices/Core/interface/DQMStore.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
@@ -23,6 +22,7 @@
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/Common/interface/DetSetVectorNew.h"
+#include "RecoLocalTracker/SiStripClusterizer/interface/SiStripClusterInfo.h"
 
 class TrackingRecHit;
 class SiStripCluster;
@@ -62,6 +62,7 @@ private:
   const edm::EDGetTokenT<edmNew::DetSetVector<SiStripCluster> > clusterToken_;
 
   const std::string trackQuality_;
+  SiStripClusterInfo siStripClusterInfo_;
   const bool doPUCorrection_;
   const bool isMC_;
   const bool haveAllHistograms_;

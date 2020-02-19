@@ -41,7 +41,6 @@
 //DQM services
 #include "DQMServices/Core/interface/DQMStore.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
 
 using namespace std;
 
@@ -51,6 +50,9 @@ using namespace std;
 
 class HLTOverallSummary : public edm::EDAnalyzer {
 public:
+  typedef dqm::legacy::MonitorElement MonitorElement;
+  typedef dqm::legacy::DQMStore DQMStore;
+
   explicit HLTOverallSummary(const edm::ParameterSet& pset);
   ~HLTOverallSummary() override;
 
@@ -77,8 +79,6 @@ HLTOverallSummary::HLTOverallSummary(const edm::ParameterSet& pset)
   dbe_ = edm::Service<DQMStore>().operator->();
   if (!dbe_) {
     LogInfo("HLTMuonVal") << "Can't find DQMStore, no results will be saved" << endl;
-  } else {
-    dbe_->setVerbose(0);
   }
 
   parameters_ = pset;

@@ -18,6 +18,12 @@ public:
 
   static constexpr double k_ScaleFromDDD = 0.1;
   static constexpr double k_ScaleToDDD = 10.0;
+  static constexpr double k_ScaleFromDDDToG4 = 1.0;
+  static constexpr double k_ScaleToDDDFromG4 = 1.0;
+  static constexpr double k_ScaleFromDD4Hep = 1.0;
+  static constexpr double k_ScaleToDD4Hep = 1.0;
+  static constexpr double k_ScaleFromDD4HepToG4 = 10.0;
+  static constexpr double k_ScaleToDD4HepFromG4 = 0.1;
   static constexpr uint32_t k_CornerSize = 6;
 
   struct hgtrap {
@@ -83,6 +89,8 @@ public:
   std::vector<int> depth_;
   std::vector<int> depthIndex_;
   std::vector<int> depthLayerF_;
+  std::vector<double> xLayerHex_;
+  std::vector<double> yLayerHex_;
   std::vector<double> zLayerHex_;
   std::vector<double> rMinLayHex_;
   std::vector<double> rMaxLayHex_;
@@ -145,9 +153,12 @@ public:
   std::vector<double> zRanges_;
   int firstLayer_;
   int firstMixedLayer_;
+  int layerOffset_;
+  std::vector<int> layerCenter_;
   wafer_map wafersInLayers_;
   wafer_map typesInLayers_;
   waferT_map waferTypes_;
+  int waferMaskMode_;
 
   COND_SERIALIZABLE;
 

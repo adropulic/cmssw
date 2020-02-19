@@ -2,7 +2,7 @@
 #include "RecoLocalTracker/SiPixelRecHits/interface/PixelCPEClusterRepair.h"
 
 // Geometry services
-#include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
+#include "Geometry/CommonDetUnit/interface/PixelGeomDetUnit.h"
 #include "Geometry/TrackerGeometryBuilder/interface/RectangularPixelTopology.h"
 
 // MessageLogger
@@ -80,10 +80,13 @@ PixelCPEClusterRepair::PixelCPEClusterRepair(edm::ParameterSet const& conf,
   speed_ = conf.getParameter<int>("speed");
   LogDebug("PixelCPEClusterRepair::PixelCPEClusterRepair:") << "Template speed = " << speed_ << "\n";
 
-  GlobalPoint center(0.0, 0.0, 0.0);
-  float theMagField = mag->inTesla(center).mag();
+  // this returns the magnetic field value in kgauss (1T = 10 kgauss)
+  int theMagField = mag->nominalValue();
 
-  if (theMagField >= 3.65 && theMagField < 3.9) {
+  if (theMagField >= 36 && theMagField < 39) {
+    LogDebug("PixelCPEClusterRepair::PixelCPEClusterRepair:")
+        << "Magnetic field value is: " << theMagField << " kgauss. Algorithm is being run \n";
+
     templateDBobject2D_ = templateDBobject2D;
     fill2DTemplIDs();
   }
@@ -97,14 +100,14 @@ PixelCPEClusterRepair::PixelCPEClusterRepair(edm::ParameterSet const& conf,
   // can be:
   //     XYX (XYZ = PXB, PXE)
   //     XYZ n (XYZ as above, n = layer, wheel or disk = 1 .. 6 ;)
-  std::vector<std::string> str_recommend2D = conf.getParameter<std::vector<std::string> >("Recommend2D");
+  std::vector<std::string> str_recommend2D = conf.getParameter<std::vector<std::string>>("Recommend2D");
   recommend2D_.reserve(str_recommend2D.size());
   for (auto& str : str_recommend2D) {
     recommend2D_.push_back(str);
   }
 
-  // do not recommend 2D if theMagField!=3.8
-  if (theMagField < 3.65 || theMagField > 3.9) {
+  // do not recommend 2D if theMagField!=3.8T
+  if (theMagField < 36 || theMagField > 39) {
     recommend2D_.clear();
   }
 
@@ -123,10 +126,10 @@ void PixelCPEClusterRepair::fill2DTemplIDs() {
         << "Subdetector " << i << " GeomDetEnumerator " << GeomDetEnumerators::tkDetEnum[i] << " offset "
         << geom_.offsetDU(GeomDetEnumerators::tkDetEnum[i]) << " is it strip? "
         << (geom_.offsetDU(GeomDetEnumerators::tkDetEnum[i]) != dus.size()
-                ? dus[geom_.offsetDU(GeomDetEnumerators::tkDetEnum[i])]->type().isTrackerStrip()
+                ? dus[geom_.offsetDU(GeomDetEnumerators::tkDetEnum[i])]->type().isOuterTracker()
                 : false);
     if (geom_.offsetDU(GeomDetEnumerators::tkDetEnum[i]) != dus.size() &&
-        dus[geom_.offsetDU(GeomDetEnumerators::tkDetEnum[i])]->type().isTrackerStrip()) {
+        dus[geom_.offsetDU(GeomDetEnumerators::tkDetEnum[i])]->type().isOuterTracker()) {
       if (geom_.offsetDU(GeomDetEnumerators::tkDetEnum[i]) < m_detectors)
         m_detectors = geom_.offsetDU(GeomDetEnumerators::tkDetEnum[i]);
     }
@@ -159,8 +162,8 @@ PixelCPEClusterRepair::~PixelCPEClusterRepair() {
     x.destroy();
 }
 
-PixelCPEBase::ClusterParam* PixelCPEClusterRepair::createClusterParam(const SiPixelCluster& cl) const {
-  return new ClusterParamTemplate(cl);
+std::unique_ptr<PixelCPEBase::ClusterParam> PixelCPEClusterRepair::createClusterParam(const SiPixelCluster& cl) const {
+  return std::make_unique<ClusterParamTemplate>(cl);
 }
 
 //------------------------------------------------------------------
@@ -333,7 +336,7 @@ void PixelCPEClusterRepair::callTempReco1D(DetParam const& theDetParam,
   float locBx = theDetParam.bx;
   //
   const bool deadpix = false;
-  std::vector<std::pair<int, int> > zeropix;
+  std::vector<std::pair<int, int>> zeropix;
   int nypix = 0, nxpix = 0;
   //
   theClusterParam.ierr = PixelTempReco1D(ID,
@@ -715,3 +718,15 @@ PixelCPEClusterRepair::Rule::Rule(const std::string& str) {
     layer_ = 0;
   }
 }  //end Rule::Rule
+
+void PixelCPEClusterRepair::fillPSetDescription(edm::ParameterSetDescription& desc) {
+  desc.add<int>("barrelTemplateID", 0);
+  desc.add<int>("forwardTemplateID", 0);
+  desc.add<int>("directoryWithTemplates", 0);
+  desc.add<int>("speed", -2);
+  desc.add<bool>("UseClusterSplitter", false);
+  desc.add<double>("MaxSizeMismatchInY", 0.3);
+  desc.add<double>("MinChargeRatio", 0.8);
+  desc.add<std::vector<std::string>>("Recommend2D", {"PXB 2", "PXB 3", "PXB 4"});
+  desc.add<bool>("RunDamagedClusters", false);
+}

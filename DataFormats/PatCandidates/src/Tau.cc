@@ -5,9 +5,10 @@
 #include "DataFormats/JetReco/interface/GenJet.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <functional>
 
 using namespace pat;
+using namespace std::placeholders;
 
 /// default constructor
 Tau::Tau()
@@ -116,9 +117,6 @@ void Tau::initFromBaseTau(const reco::BaseTau& aTau) {
     }
     pfEssential_.push_back(pat::tau::TauPFEssential(*pfTau));
   }
-  const reco::CaloTau* caloTau = dynamic_cast<const reco::CaloTau*>(&aTau);
-  if (caloTau != nullptr)
-    caloSpecific_.push_back(pat::tau::TauCaloSpecific(*caloTau));
 }
 
 /// destructor
@@ -255,20 +253,11 @@ const pat::tau::TauPFEssential& Tau::pfEssential() const {
   return pfEssential_[0];
 }
 
-const pat::tau::TauCaloSpecific& Tau::caloSpecific() const {
-  if (!isCaloTau())
-    throw cms::Exception("Type Error")
-        << "Requesting a CaloTau-specific information from a pat::Tau which wasn't made from a CaloTau.\n";
-  return caloSpecific_[0];
-}
-
 reco::Candidate::LorentzVector Tau::p4Jet() const {
-  if (isCaloTau())
-    return caloSpecific().p4Jet_;
   if (isPFTau())
     return reco::Candidate::LorentzVector(pfEssential().p4Jet_);
-  throw cms::Exception("Type Error") << "Requesting a CaloTau/PFTau-specific information from a pat::Tau which wasn't "
-                                        "made from either a CaloTau or a PFTau.\n";
+  throw cms::Exception("Type Error") << "Requesting a PFTau-specific information from a pat::Tau which wasn't "
+                                        "made from a PFTau.\n";
 }
 
 float Tau::dxy_Sig() const {
@@ -298,30 +287,24 @@ float Tau::ip3d_Sig() const {
 }
 
 float Tau::etaetaMoment() const {
-  if (isCaloTau())
-    return caloSpecific().etaetaMoment_;
   if (isPFTau())
     return pfSpecific().etaetaMoment_;
-  throw cms::Exception("Type Error") << "Requesting a CaloTau/PFTau-specific information from a pat::Tau which wasn't "
-                                        "made from either a CaloTau or a PFTau.\n";
+  throw cms::Exception("Type Error") << "Requesting a PFTau-specific information from a pat::Tau which wasn't "
+                                        "made from a PFTau.\n";
 }
 
 float Tau::phiphiMoment() const {
-  if (isCaloTau())
-    return caloSpecific().phiphiMoment_;
   if (isPFTau())
     return pfSpecific().phiphiMoment_;
-  throw cms::Exception("Type Error") << "Requesting a CaloTau/PFTau-specific information from a pat::Tau which wasn't "
-                                        "made from either a CaloTau or a PFTau.\n";
+  throw cms::Exception("Type Error") << "Requesting a PFTau-specific information from a pat::Tau which wasn't "
+                                        "made from a PFTau.\n";
 }
 
 float Tau::etaphiMoment() const {
-  if (isCaloTau())
-    return caloSpecific().etaphiMoment_;
   if (isPFTau())
     return pfSpecific().etaphiMoment_;
-  throw cms::Exception("Type Error") << "Requesting a CaloTau/PFTau-specific information from a pat::Tau which wasn't "
-                                        "made from either a CaloTau or a PFTau.\n";
+  throw cms::Exception("Type Error") << "Requesting a PFTau-specific information from a pat::Tau which wasn't "
+                                        "made from a PFTau.\n";
 }
 
 void Tau::setDecayMode(int decayMode) {
@@ -879,6 +862,10 @@ reco::CandidatePtrVector Tau::signalCands() const {
     reco::CandidatePtrVector ret2;
     std::vector<std::pair<float, size_t> > pt_index;
     size_t index = 0;
+    ret2.reserve(signalChargedHadrCandPtrs_.size() + signalNeutralHadrCandPtrs_.size() + signalGammaCandPtrs_.size());
+    pt_index.reserve(signalChargedHadrCandPtrs_.size() + signalNeutralHadrCandPtrs_.size() +
+                     signalGammaCandPtrs_.size());
+
     for (const auto& p : signalChargedHadrCandPtrs_) {
       ret2.push_back(p);
       pt_index.push_back(std::make_pair(p->pt(), index));
@@ -894,9 +881,8 @@ reco::CandidatePtrVector Tau::signalCands() const {
       pt_index.push_back(std::make_pair(p->pt(), index));
       index++;
     }
-    std::sort(pt_index.begin(),
-              pt_index.end(),
-              boost::bind(&std::pair<float, size_t>::first, _1) > boost::bind(&std::pair<float, size_t>::first, _2));
+    std::sort(pt_index.begin(), pt_index.end(), std::greater<>());
+    ret.reserve(pt_index.size());
     for (const auto& p : pt_index) {
       ret.push_back(ret2[p.second]);
     }
@@ -959,6 +945,10 @@ reco::CandidatePtrVector Tau::isolationCands() const {
     /// the isolationCands pointers are not saved in miniAOD, so the collection is created dynamically by glueing together 3 sub-collection and re-ordering
     reco::CandidatePtrVector ret2;
     std::vector<std::pair<float, size_t> > pt_index;
+    ret2.reserve(isolationChargedHadrCandPtrs_.size() + isolationNeutralHadrCandPtrs_.size() +
+                 isolationGammaCandPtrs_.size());
+    pt_index.reserve(isolationChargedHadrCandPtrs_.size() + isolationNeutralHadrCandPtrs_.size() +
+                     isolationGammaCandPtrs_.size());
     size_t index = 0;
     for (const auto& p : isolationChargedHadrCandPtrs_) {
       ret2.push_back(p);
@@ -975,9 +965,8 @@ reco::CandidatePtrVector Tau::isolationCands() const {
       pt_index.push_back(std::make_pair(p->pt(), index));
       index++;
     }
-    std::sort(pt_index.begin(),
-              pt_index.end(),
-              boost::bind(&std::pair<float, size_t>::first, _1) > boost::bind(&std::pair<float, size_t>::first, _2));
+    std::sort(pt_index.begin(), pt_index.end(), std::greater<>());
+    ret.reserve(pt_index.size());
     for (const auto& p : pt_index) {
       ret.push_back(ret2[p.second]);
     }

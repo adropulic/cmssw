@@ -8,7 +8,7 @@
 #include "FWCore/Utilities/interface/isFinite.h"
 
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
+#include "DQMServices/Core/interface/DQMStore.h"
 
 #include "DataFormats/Common/interface/Association.h"
 #include "DataFormats/TrackReco/interface/Track.h"
@@ -27,6 +27,9 @@
 #include <iomanip>
 
 namespace {
+  using dqm::reco::DQMStore;
+  using dqm::reco::MonitorElement;
+
   template <typename T>
   void fillNoFlow(MonitorElement* me, T val) {
     auto h = me->getTH1();
@@ -924,19 +927,21 @@ void PackedCandidateTrackValidator::analyze(const edm::Event& iEvent, const edm:
     };
 
     const auto pcPt = pcRef->pt();
-    const auto diffCovQoverpQoverp = fillCov3(h_diffCovQoverpQoverp,
-                                              reco::TrackBase::i_qoverp,
-                                              reco::TrackBase::i_qoverp,
-                                              [=](double val) { return val * pcPt * pcPt; },
-                                              [=](double val) { return val / pcPt / pcPt; });
+    const auto diffCovQoverpQoverp = fillCov3(
+        h_diffCovQoverpQoverp,
+        reco::TrackBase::i_qoverp,
+        reco::TrackBase::i_qoverp,
+        [=](double val) { return val * pcPt * pcPt; },
+        [=](double val) { return val / pcPt / pcPt; });
     const auto diffCovLambdaLambda =
         fillCov1(h_diffCovLambdaLambda, reco::TrackBase::i_lambda, reco::TrackBase::i_lambda);
     const auto diffCovLambdaDsz = fillCov1(h_diffCovLambdaDsz, reco::TrackBase::i_lambda, reco::TrackBase::i_dsz);
-    const auto diffCovPhiPhi = fillCov3(h_diffCovPhiPhi,
-                                        reco::TrackBase::i_phi,
-                                        reco::TrackBase::i_phi,
-                                        [=](double val) { return val * pcPt * pcPt; },
-                                        [=](double val) { return val / pcPt / pcPt; });
+    const auto diffCovPhiPhi = fillCov3(
+        h_diffCovPhiPhi,
+        reco::TrackBase::i_phi,
+        reco::TrackBase::i_phi,
+        [=](double val) { return val * pcPt * pcPt; },
+        [=](double val) { return val / pcPt / pcPt; });
     const auto diffCovPhiDxy = fillCov1(h_diffCovPhiDxy, reco::TrackBase::i_phi, reco::TrackBase::i_dxy);
     const auto diffCovDxyDxy = fillCov2(
         h_diffCovDxyDxy, reco::TrackBase::i_dxy, reco::TrackBase::i_dxy, [](double value) { return value * 10000.; });

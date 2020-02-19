@@ -13,7 +13,6 @@
 // DQM
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
 #include "DQMServices/Core/interface/DQMStore.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
 
 // Candidate handling
 #include "DataFormats/Candidate/interface/Candidate.h"
@@ -53,7 +52,6 @@ protected:
   void dqmBeginRun(edm::Run const &, edm::EventSetup const &) override;
   void bookHistograms(DQMStore::IBooker &, edm::Run const &, edm::EventSetup const &) override;
   void analyze(edm::Event const &e, edm::EventSetup const &eSetup) override;
-  void endRun(edm::Run const &run, edm::EventSetup const &eSetup) override;
 
 private:
   // histos booking function

@@ -169,32 +169,32 @@ VirtualJetProducer::VirtualJetProducer(const edm::ParameterSet& iConfig) {
   // - fastjet PU subtraction parameters (not yet considered)
   //
   if (jetAlgorithm_ == "Kt")
-    fjJetDefinition_ = JetDefPtr(new fastjet::JetDefinition(fastjet::kt_algorithm, rParam_));
+    fjJetDefinition_ = std::make_shared<fastjet::JetDefinition>(fastjet::kt_algorithm, rParam_);
 
   else if (jetAlgorithm_ == "CambridgeAachen")
-    fjJetDefinition_ = JetDefPtr(new fastjet::JetDefinition(fastjet::cambridge_algorithm, rParam_));
+    fjJetDefinition_ = std::make_shared<fastjet::JetDefinition>(fastjet::cambridge_algorithm, rParam_);
 
   else if (jetAlgorithm_ == "AntiKt")
-    fjJetDefinition_ = JetDefPtr(new fastjet::JetDefinition(fastjet::antikt_algorithm, rParam_));
+    fjJetDefinition_ = std::make_shared<fastjet::JetDefinition>(fastjet::antikt_algorithm, rParam_);
 
   else if (jetAlgorithm_ == "GeneralizedKt")
-    fjJetDefinition_ = JetDefPtr(new fastjet::JetDefinition(fastjet::genkt_algorithm, rParam_, -2));
+    fjJetDefinition_ = std::make_shared<fastjet::JetDefinition>(fastjet::genkt_algorithm, rParam_, -2);
 
   else if (jetAlgorithm_ == "SISCone") {
     fjPlugin_ = PluginPtr(new fastjet::SISConePlugin(rParam_, 0.75, 0, 0.0, false, fastjet::SISConePlugin::SM_pttilde));
-    fjJetDefinition_ = JetDefPtr(new fastjet::JetDefinition(&*fjPlugin_));
+    fjJetDefinition_ = std::make_shared<fastjet::JetDefinition>(&*fjPlugin_);
 
   } else if (jetAlgorithm_ == "IterativeCone") {
     fjPlugin_ = PluginPtr(new fastjet::CMSIterativeConePlugin(rParam_, 1.0));
-    fjJetDefinition_ = JetDefPtr(new fastjet::JetDefinition(&*fjPlugin_));
+    fjJetDefinition_ = std::make_shared<fastjet::JetDefinition>(&*fjPlugin_);
 
   } else if (jetAlgorithm_ == "CDFMidPoint") {
     fjPlugin_ = PluginPtr(new fastjet::CDFMidPointPlugin(rParam_, 0.75));
-    fjJetDefinition_ = JetDefPtr(new fastjet::JetDefinition(&*fjPlugin_));
+    fjJetDefinition_ = std::make_shared<fastjet::JetDefinition>(&*fjPlugin_);
 
   } else if (jetAlgorithm_ == "ATLASCone") {
     fjPlugin_ = PluginPtr(new fastjet::ATLASConePlugin(rParam_));
-    fjJetDefinition_ = JetDefPtr(new fastjet::JetDefinition(&*fjPlugin_));
+    fjJetDefinition_ = std::make_shared<fastjet::JetDefinition>(&*fjPlugin_);
 
   } else {
     throw cms::Exception("Invalid jetAlgorithm") << "Jet algorithm for VirtualJetProducer is invalid, Abort!\n";
@@ -206,9 +206,9 @@ VirtualJetProducer::VirtualJetProducer(const edm::ParameterSet& iConfig) {
     if (puSubtractorName_.empty()) {
       LogWarning("VirtualJetProducer")
           << "Pile Up correction on; however, pile up type is not specified. Using default... \n";
-      subtractor_ = boost::shared_ptr<PileUpSubtractor>(new PileUpSubtractor(iConfig, consumesCollector()));
+      subtractor_ = std::make_shared<PileUpSubtractor>(iConfig, consumesCollector());
     } else
-      subtractor_ = boost::shared_ptr<PileUpSubtractor>(
+      subtractor_ = std::shared_ptr<PileUpSubtractor>(
           PileUpSubtractorFactory::get()->create(puSubtractorName_, iConfig, consumesCollector()));
   }
 
@@ -220,16 +220,16 @@ VirtualJetProducer::VirtualJetProducer(const edm::ParameterSet& iConfig) {
 
   if (doAreaFastjet_ || doRhoFastjet_) {
     if (voronoiRfact_ <= 0) {
-      fjActiveArea_ = ActiveAreaSpecPtr(new fastjet::GhostedAreaSpec(ghostEtaMax_, activeAreaRepeats_, ghostArea_));
+      fjActiveArea_ = std::make_shared<fastjet::GhostedAreaSpec>(ghostEtaMax_, activeAreaRepeats_, ghostArea_);
 
       if (!useExplicitGhosts_) {
-        fjAreaDefinition_ = AreaDefinitionPtr(new fastjet::AreaDefinition(fastjet::active_area, *fjActiveArea_));
+        fjAreaDefinition_ = std::make_shared<fastjet::AreaDefinition>(fastjet::active_area, *fjActiveArea_);
       } else {
         fjAreaDefinition_ =
-            AreaDefinitionPtr(new fastjet::AreaDefinition(fastjet::active_area_explicit_ghosts, *fjActiveArea_));
+            std::make_shared<fastjet::AreaDefinition>(fastjet::active_area_explicit_ghosts, *fjActiveArea_);
       }
     }
-    fjSelector_ = SelectorPtr(new fastjet::Selector(fastjet::SelectorAbsRapMax(rhoEtaMax_)));
+    fjSelector_ = std::make_shared<fastjet::Selector>(fastjet::SelectorAbsRapMax(rhoEtaMax_));
   }
 
   if ((doFastJetNonUniform_) && (puCenters_.empty()))
@@ -649,77 +649,79 @@ void VirtualJetProducer::writeJets(edm::Event& iEvent, edm::EventSetup const& iS
   // allocate fjJets_.size() Ts in vector
   auto jets = std::make_unique<std::vector<T>>(fjJets_.size());
 
-  // Distance between jet centers and overlap area -- for disk-based area calculation
-  using RIJ = std::pair<double, double>;
-  std::vector<RIJ> rijStorage(fjJets_.size() * (fjJets_.size() / 2));
-  RIJ* rij[fjJets_.size()];
-  unsigned int k = 0;
-  for (unsigned int ijet = 0; ijet < fjJets_.size(); ++ijet) {
-    rij[ijet] = &rijStorage[k];
-    k += ijet;
-  }
+  if (!fjJets_.empty()) {
+    // Distance between jet centers and overlap area -- for disk-based area calculation
+    using RIJ = std::pair<double, double>;
+    std::vector<RIJ> rijStorage(fjJets_.size() * (fjJets_.size() / 2));
+    RIJ* rij[fjJets_.size()];
+    unsigned int k = 0;
+    for (unsigned int ijet = 0; ijet < fjJets_.size(); ++ijet) {
+      rij[ijet] = &rijStorage[k];
+      k += ijet;
+    }
 
-  float etaJ[fjJets_.size()], phiJ[fjJets_.size()];
+    float etaJ[fjJets_.size()], phiJ[fjJets_.size()];
 
-  auto orParam_ = 1. / rParam_;
-  // fill jets
-  for (unsigned int ijet = 0; ijet < fjJets_.size(); ++ijet) {
-    auto& jet = (*jets)[ijet];
-    // get the fastjet jet
-    const fastjet::PseudoJet& fjJet = fjJets_[ijet];
-    // get the constituents from fastjet
-    std::vector<fastjet::PseudoJet> const& fjConstituents = fastjet::sorted_by_pt(fjJet.constituents());
-    // convert them to CandidatePtr vector
-    std::vector<CandidatePtr> const& constituents = getConstituents(fjConstituents);
+    auto orParam_ = 1. / rParam_;
+    // fill jets
+    for (unsigned int ijet = 0; ijet < fjJets_.size(); ++ijet) {
+      auto& jet = (*jets)[ijet];
+      // get the fastjet jet
+      const fastjet::PseudoJet& fjJet = fjJets_[ijet];
+      // get the constituents from fastjet
+      std::vector<fastjet::PseudoJet> const& fjConstituents = fastjet::sorted_by_pt(fjJet.constituents());
+      // convert them to CandidatePtr vector
+      std::vector<CandidatePtr> const& constituents = getConstituents(fjConstituents);
 
-    // write the specifics to the jet (simultaneously sets 4-vector, vertex).
-    // These are overridden functions that will call the appropriate
-    // specific allocator.
-    writeSpecific(
-        jet, Particle::LorentzVector(fjJet.px(), fjJet.py(), fjJet.pz(), fjJet.E()), vertex_, constituents, iSetup);
-    phiJ[ijet] = jet.phi();
-    etaJ[ijet] = jet.eta();
-  }
+      // write the specifics to the jet (simultaneously sets 4-vector, vertex).
+      // These are overridden functions that will call the appropriate
+      // specific allocator.
+      writeSpecific(
+          jet, Particle::LorentzVector(fjJet.px(), fjJet.py(), fjJet.pz(), fjJet.E()), vertex_, constituents, iSetup);
+      phiJ[ijet] = jet.phi();
+      etaJ[ijet] = jet.eta();
+    }
 
-  // calcuate the jet area
-  for (unsigned int ijet = 0; ijet < fjJets_.size(); ++ijet) {
     // calcuate the jet area
-    double jetArea = 0.0;
-    // get the fastjet jet
-    const auto& fjJet = fjJets_[ijet];
-    if (doAreaFastjet_ && fjJet.has_area()) {
-      jetArea = fjJet.area();
-    } else if (doAreaDiskApprox_) {
-      // Here it is assumed that fjJets_ is in decreasing order of pT,
-      // which should happen in FastjetJetProducer::runAlgorithm()
-      jetArea = M_PI;
-      RIJ* distance = rij[ijet];
-      for (unsigned jJet = 0; jJet < ijet; ++jJet) {
-        distance[jJet].first = std::sqrt(reco::deltaR2(etaJ[ijet], phiJ[ijet], etaJ[jJet], phiJ[jJet])) * orParam_;
-        distance[jJet].second = reco::helper::VirtualJetProducerHelper::intersection(distance[jJet].first);
-        jetArea -= distance[jJet].second;
-        for (unsigned kJet = 0; kJet < jJet; ++kJet) {
-          jetArea += reco::helper::VirtualJetProducerHelper::intersection(distance[jJet].first,
-                                                                          distance[kJet].first,
-                                                                          rij[jJet][kJet].first,
-                                                                          distance[jJet].second,
-                                                                          distance[kJet].second,
-                                                                          rij[jJet][kJet].second);
-        }  // end loop over harder jets
-      }    // end loop over harder jets
-      jetArea *= (rParam_ * rParam_);
-    }
-    auto& jet = (*jets)[ijet];
-    jet.setJetArea(jetArea);
+    for (unsigned int ijet = 0; ijet < fjJets_.size(); ++ijet) {
+      // calcuate the jet area
+      double jetArea = 0.0;
+      // get the fastjet jet
+      const auto& fjJet = fjJets_[ijet];
+      if (doAreaFastjet_ && fjJet.has_area()) {
+        jetArea = fjJet.area();
+      } else if (doAreaDiskApprox_) {
+        // Here it is assumed that fjJets_ is in decreasing order of pT,
+        // which should happen in FastjetJetProducer::runAlgorithm()
+        jetArea = M_PI;
+        RIJ* distance = rij[ijet];
+        for (unsigned jJet = 0; jJet < ijet; ++jJet) {
+          distance[jJet].first = std::sqrt(reco::deltaR2(etaJ[ijet], phiJ[ijet], etaJ[jJet], phiJ[jJet])) * orParam_;
+          distance[jJet].second = reco::helper::VirtualJetProducerHelper::intersection(distance[jJet].first);
+          jetArea -= distance[jJet].second;
+          for (unsigned kJet = 0; kJet < jJet; ++kJet) {
+            jetArea += reco::helper::VirtualJetProducerHelper::intersection(distance[jJet].first,
+                                                                            distance[kJet].first,
+                                                                            rij[jJet][kJet].first,
+                                                                            distance[jJet].second,
+                                                                            distance[kJet].second,
+                                                                            rij[jJet][kJet].second);
+          }  // end loop over harder jets
+        }    // end loop over harder jets
+        jetArea *= (rParam_ * rParam_);
+      }
+      auto& jet = (*jets)[ijet];
+      jet.setJetArea(jetArea);
 
-    if (doPUOffsetCorr_) {
-      jet.setPileup(subtractor_->getPileUpEnergy(ijet));
-    } else {
-      jet.setPileup(0.0);
-    }
+      if (doPUOffsetCorr_) {
+        jet.setPileup(subtractor_->getPileUpEnergy(ijet));
+      } else {
+        jet.setPileup(0.0);
+      }
 
-    // std::cout << "area " << ijet << " " << jetArea << " " << Area<T>::get(jet) << std::endl;
-    // std::cout << "JetVI " << ijet << ' '<< jet.pt() << " " << jet.et() << ' '<< jet.energy() << ' '<< jet.mass() << std::endl;
+      // std::cout << "area " << ijet << " " << jetArea << " " << Area<T>::get(jet) << std::endl;
+      // std::cout << "JetVI " << ijet << ' '<< jet.pt() << " " << jet.et() << ' '<< jet.energy() << ' '<< jet.mass() << std::endl;
+    }
   }
   // put the jets in the collection
   iEvent.put(std::move(jets), jetCollInstanceName_);
